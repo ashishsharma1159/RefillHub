@@ -366,7 +366,9 @@ else:
                 # Convert frozenset → string for display
                 rules_display = rules[['antecedents','consequents','support','confidence','lift']].copy()
                 rules_display['antecedents'] = rules_display['antecedents'].apply(lambda x: ", ".join(list(x)))
-                rules_display['consequents'] = rules_display['consequents'].apply(lambda x: ", ".
+                rules_display['consequents'] = rules_display['consequents'].apply(lambda x: ", ".join(list(x)))
+
+                st.dataframe(rules_display.sort_values(['confidence','lift'], ascending=False).head(20))
 
 
 
