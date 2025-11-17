@@ -275,14 +275,21 @@ if seg_features:
 
     # --- Recommended K ---
     recommended_k = K_range[sil.index(max(sil))]
-    st.success(f"Recommended number of clusters (based on silhouette score): **{recommended_k}**")
+    st.success(f"Recommended number of clusters: **{recommended_k}**")
 
     # ---------------------------------
     # 2. ACTUAL CLUSTERING SECTION
     # ---------------------------------
     st.subheader("Apply Clustering")
 
-    n_clusters = st.slider("Choose number of clusters to form", 2, max_k, recommended_k)
+    # 🟢 FIX: number_input keeps correct value, slider resets!
+    n_clusters = st.number_input(
+        "Choose number of clusters",
+        min_value=2,
+        max_value=max_k,
+        value=recommended_k,
+        step=1
+    )
 
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     cluster_labels = kmeans.fit_predict(X_scaled)
