@@ -78,11 +78,14 @@ def train_classifiers(X_train, X_test, y_train, y_test):
         auc = roc_auc_score(y_test, dt.predict_proba(X_test)[:,1])
     except Exception:
         auc = np.nan
-    results['Decision Tree'] = {'model': dt, 'acc': accuracy_score(y_test, preds),
-                                'precision': precision_score(y_test, preds, zero_division=0),
-                                'recall': recall_score(y_test, preds, zero_division=0),
-                                'f1': f1_score(y_test, preds, zero_division=0),
-                                'auc': auc}
+    results['Decision Tree'] = {
+    'model': dt,
+    'acc': accuracy_score(y_test, preds),
+    'precision': precision_score(y_test, preds, average="weighted", zero_division=0),
+    'recall': recall_score(y_test, preds, average="weighted", zero_division=0),
+    'f1': f1_score(y_test, preds, average="weighted", zero_division=0),
+    'auc': auc
+}
 
     # Random Forest
     rf = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -92,11 +95,14 @@ def train_classifiers(X_train, X_test, y_train, y_test):
         auc = roc_auc_score(y_test, rf.predict_proba(X_test)[:,1])
     except Exception:
         auc = np.nan
-    results['Random Forest'] = {'model': rf, 'acc': accuracy_score(y_test, preds),
-                                'precision': precision_score(y_test, preds, zero_division=0),
-                                'recall': recall_score(y_test, preds, zero_division=0),
-                                'f1': f1_score(y_test, preds, zero_division=0),
-                                'auc': auc}
+    rresults['Random Forest'] = {
+    'model': rf,
+    'acc': accuracy_score(y_test, preds),
+    'precision': precision_score(y_test, preds, average="weighted", zero_division=0),
+    'recall': recall_score(y_test, preds, average="weighted", zero_division=0),
+    'f1': f1_score(y_test, preds, average="weighted", zero_division=0),
+    'auc': auc
+}
 
     # Gradient Boosting
     gb = GradientBoostingClassifier(random_state=42)
@@ -106,11 +112,17 @@ def train_classifiers(X_train, X_test, y_train, y_test):
         auc = roc_auc_score(y_test, gb.predict_proba(X_test)[:,1])
     except Exception:
         auc = np.nan
-    results['Gradient Boosting'] = {'model': gb, 'acc': accuracy_score(y_test, preds),
-                                   'precision': precision_score(y_test, preds, zero_division=0),
-                                   'recall': recall_score(y_test, preds, zero_division=0),
-                                   'f1': f1_score(y_test, preds, zero_division=0),
-                                   'auc': auc}
+
+
+    results['Gradient Boosting'] = {
+    'model': gb,
+    'acc': accuracy_score(y_test, preds),
+    'precision': precision_score(y_test, preds, average="weighted", zero_division=0),
+    'recall': recall_score(y_test, preds, average="weighted", zero_division=0),
+    'f1': f1_score(y_test, preds, average="weighted", zero_division=0),
+    'auc': auc
+}
+
 
     return results
 
@@ -321,30 +333,45 @@ else:
     assoc_cols = st.multiselect("Select categorical columns to use for association rules", options=cat_cols, default=cat_cols[:6])
     min_support = st.slider("Minimum support", 0.01, 0.5, 0.05)
     min_conf = st.slider("Minimum confidence", 0.1, 1.0, 0.6)
+
     if assoc_cols:
-        # Build a transaction matrix: each unique value becomes an item (col=value)
         trans = pd.DataFrame()
         for c in assoc_cols:
-            # create columns like "Gender_Male"
             dummies = pd.get_dummies(df[c].astype(str), prefix=c)
             trans = pd.concat([trans, dummies], axis=1)
-        # run apriori
+
+        # Run Apriori
         frequent = apriori(trans, min_support=min_support, use_colnames=True)
+
         if frequent.empty:
             st.write("No frequent itemsets found with this support. Try lowering min_support.")
         else:
+            # FIX 1: Convert frozenset → string for Streamlit/Arrow compatibility
+            frequent["itemsets"] = frequent["itemsets"].apply(lambda x: ", ".join(list(x)))
+
             st.write("Top frequent itemsets:")
-            st.dataframe(frequent.sort_values("support", ascending=False).head(10))
+            st.dataframe(
+                frequent.sort_values("support", ascending=False).head(10)
+            )
+
+            # Association rules
             rules = association_rules(frequent, metric="confidence", min_threshold=min_conf)
+
             if rules.empty:
-                st.write("No association rules found with the chosen confidence threshold.")
+                st.write("No association rules found with this confidence threshold.")
             else:
                 st.subheader("Derived association rules")
-                # show a compact rules table
+
+                # FIX 2: Convert frozenset → string
                 rules_display = rules[['antecedents','consequents','support','confidence','lift']].copy()
-                rules_display['antecedents'] = rules_display['antecedents'].apply(lambda x: ','.join(list(x)))
-                rules_display['consequents'] = rules_display['consequents'].apply(lambda x: ','.join(list(x)))
-                st.dataframe(rules_display.sort_values(['confidence','lift'], ascending=False).head(20))
+                rules_display['antecedents'] = rules_display['antecedents'].apply(lambda x: ", ".join(list(x)))
+                rules_display['consequents'] = rules_display['consequents'].apply(lambda x: ", ".join(list(x)))
+
+                st.dataframe(
+                    rules_display.sort_values(['confidence','lift'], ascending=False).head(20)
+                )
+
+
 
 # -------------------------
 # Classification Models
