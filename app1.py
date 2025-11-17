@@ -46,8 +46,9 @@ def load_data(path):
     df = pd.read_csv(path)
     return df
     
-DATA_PATH = "/Users/ashishsharma/Desktop/untitled folder/ReFillHub_SyntheticSurvey.csv"
+DATA_PATH = "https://raw.githubusercontent.com/ashishsharma1159/RefillHub/main/ReFillHub_SyntheticSurvey.csv"
 df = load_data(DATA_PATH)
+
 
 
 def auto_detect_columns(df):
