@@ -329,47 +329,44 @@ st.header("Association Mining (Apriori)")
 if not MLXTEND_AVAILABLE:
     st.warning("mlxtend not installed — install with `pip install mlxtend` to enable Apriori/association rules.")
 else:
-    # For Apriori we need boolean/onehot transactions. We'll convert selected columns to boolean indicators.
     assoc_cols = st.multiselect("Select categorical columns to use for association rules", options=cat_cols, default=cat_cols[:6])
     min_support = st.slider("Minimum support", 0.01, 0.5, 0.05)
     min_conf = st.slider("Minimum confidence", 0.1, 1.0, 0.6)
 
     if assoc_cols:
+
+        # Build transactional dataset
         trans = pd.DataFrame()
         for c in assoc_cols:
             dummies = pd.get_dummies(df[c].astype(str), prefix=c)
             trans = pd.concat([trans, dummies], axis=1)
 
-        # Run Apriori
+        # Run Apriori (itemsets will be frozenset here – CORRECT)
         frequent = apriori(trans, min_support=min_support, use_colnames=True)
 
         if frequent.empty:
-            st.write("No frequent itemsets found with this support. Try lowering min_support.")
+            st.write("No frequent itemsets found.")
         else:
-            # FIX 1: Convert frozenset → string for Streamlit/Arrow compatibility
-            frequent["itemsets"] = frequent["itemsets"].apply(lambda x: ", ".join(list(x)))
-
             st.write("Top frequent itemsets:")
-            st.dataframe(
-                frequent.sort_values("support", ascending=False).head(10)
-            )
 
-            # Association rules
+            # Convert frozensets → strings for display only
+            display_freq = frequent.copy()
+            display_freq["itemsets"] = display_freq["itemsets"].apply(lambda x: ", ".join(list(x)))
+
+            st.dataframe(display_freq.sort_values("support", ascending=False).head(10))
+
+            # Generate association rules (requires frozenset!)
             rules = association_rules(frequent, metric="confidence", min_threshold=min_conf)
 
             if rules.empty:
-                st.write("No association rules found with this confidence threshold.")
+                st.write("No association rules found.")
             else:
                 st.subheader("Derived association rules")
 
-                # FIX 2: Convert frozenset → string
+                # Convert frozenset → string for display
                 rules_display = rules[['antecedents','consequents','support','confidence','lift']].copy()
                 rules_display['antecedents'] = rules_display['antecedents'].apply(lambda x: ", ".join(list(x)))
-                rules_display['consequents'] = rules_display['consequents'].apply(lambda x: ", ".join(list(x)))
-
-                st.dataframe(
-                    rules_display.sort_values(['confidence','lift'], ascending=False).head(20)
-                )
+                rules_display['consequents'] = rules_display['consequents'].apply(lambda x: ", ".
 
 
 
