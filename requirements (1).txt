@@ -1,6 +1,8 @@
 streamlit
-scikit-learn
 pandas
 numpy
 matplotlib
 seaborn
+scikit-learn
+xgboost
+mlxtend
